@@ -1,0 +1,18 @@
+[
+    {
+        "author": "Pete Hunt",
+        "text": "This is one comment"
+    },
+    {
+        "author": "Jordan Walke",
+        "text": "This is *another* comment"
+    },
+    {
+        "author": "Roger Moore",
+        "text": "I wish I was really **James Bond** :("
+    },
+    {
+        "author": "Martien",
+        "text": "Why did you do that?!"
+    }
+]
