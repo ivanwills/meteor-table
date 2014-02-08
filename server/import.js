@@ -8,51 +8,50 @@ var usersTable = new Meteor.Collection("users-table");
 var tables     = {
     comments: comments,
     users: users,
-    usersTable: usersTable
+    'users-table' : usersTable
 };
+var basedir = process.cwd().replace(/[.]meteor\/.*$/, '');
+console.log(basedir);
 
-var init = Fiber(function (name, table) {
+var init = Fiber(function (me) {
+    var name = me[0];
+    var table = me[1];
     var fiber = Fiber.current;
+    console.info('in init of ' + name)
 
-    fs.readFile('server/' + name + '.json', 'utf8', function (err, data) {
+    fs.readFile(basedir + 'server/' + name + '.json', 'utf8', function (err, data) {
         if (err) {
-            logger.error('Error: ' + err);
+            console.error('Error: ' + err);
             return;
         }
 
         var data = EJSON.parse(data);
-        logger.log('read server/' + name + '.json');
+        console.log('read ' + basedir + 'server/' + name + '.json');
         fiber.run(data);
     });
 
     var data = Fiber.yield();
-    if (data && data.settings) {
-
-        for ( var i in data.settings ) {
-            var name  = data.settings[i].name;
-            var found = settings.findOne({ name : name });
-            if ( found ) {
-                logger.log('update ', name);
-                settings.update(
-                    { _id : found._id },
-                    { $set : data.settings[i] }
-                );
-            }
-            else {
-                logger.log('setting ', name);
-                settings.insert( data.settings[i] );
-            }
+    console.log(name, data);
+    if (data) {
+        for ( var i in data ) {
+            try {
+            table.insert(data[i]);
+            } catch(e) { console.error('failed to insert', e ); }
         }
     }
 });
 
-for ( var name in tables ) {
-    var table = tables[name];
-    if ( table.find().count() ) break;
-
-    Meteor.startup(function () {
-        init.run(name, table);
-    });
-
-}
+Meteor.startup(function () {
+    for ( var name in tables ) {
+        var table = tables[name];
+        if ( table.find().count() ) {
+            console.info(name + ' has ' + table.find().count() + ' rows');
+        }
+        else {
+            console.info('initialising ' + name);
+            init.run([name, table]);
+            break;
+        }
+    }
+});
 
