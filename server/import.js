@@ -1,5 +1,4 @@
 
-var Fiber = Npm.require('fibers');
 var fs = Npm.require('fs');
 
 var comments   = new Meteor.Collection("comments");
@@ -10,46 +9,28 @@ var tables     = {
     users: users,
     'users-table' : usersTable
 };
-var basedir = process.cwd().replace(/[.]meteor\/.*$/, '');
-console.log(basedir);
-
-var init = Fiber(function (me) {
-    var name = me[0];
-    var table = me[1];
-    var fiber = Fiber.current;
-    console.info('in init of ' + name)
-
-    fs.readFile(basedir + 'server/' + name + '.json', 'utf8', function (err, data) {
-        if (err) {
-            console.error('Error: ' + err);
-            return;
-        }
-
-        var data = EJSON.parse(data);
-        console.log('read ' + basedir + 'server/' + name + '.json');
-        fiber.run(data);
-    });
-
-    var data = Fiber.yield();
-    console.log(name, data);
-    if (data) {
-        for ( var i in data ) {
-            try {
-            table.insert(data[i]);
-            } catch(e) { console.error('failed to insert', e ); }
-        }
-    }
-});
 
 Meteor.startup(function () {
+    var basedir = process.cwd().replace(/[.]meteor\/.*$/, '');
+    console.log(basedir);
+    console.log(tables);
+
     for ( var name in tables ) {
+        console.log(name);
         var table = tables[name];
         if ( table.find().count() ) {
             console.info(name + ' has ' + table.find().count() + ' rows');
         }
         else {
             console.info('initialising ' + name);
-            init.run([name, table]);
+            var data = fs.readFileSync(basedir + 'server/' + name + '.json', { encoding: 'utf8' });
+            data = EJSON.parse(data);
+            if (data) {
+                for ( var i in data ) {
+                    console.log(data[i]);
+                    table.insert(data[i]);
+                }
+            }
             break;
         }
     }
